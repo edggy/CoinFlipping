@@ -1,0 +1,3 @@
+[submodule "gf2"]
+	path = gf2
+	url = https://github.com/edggy/gf2.git

@@ -29,7 +29,7 @@ static GF2* polyMultiply(GF2* p, GF2 c, size_t len, GF2 mod) {
 }
 
 static GF2* polyMultiply2(GF2* p, GF2* q, size_t len, 
-                                   GF2 mod, GF2 lgsize) {
+                                   GF2 mod, unsigned int lgsize) {
 	// Assumptions: P[-1] is allocated
 	//              Q = q[1] x + q[0] i.e. degree 1
 	// q = a + bx

@@ -31,48 +31,74 @@ hardcodedKeys = {
     32: [(0x1020609b3, 0xf2dff8e8),
          (0x10ae3a5b5,0xb3a61eea),
          (0x10c44a745,0xb46b3c1a),
+         (0x112db649d,0x9e10e810),
+         (0x112e52541,0xc7742a13),
          (0x118651375,0x510b540a),
          (0x11950d75b,0x9341edbe),
          (0x122d26c33,0x6c3e5484),
          (0x125f3797b,0x8a9b0b93),
+         (0x12828e52f,0xf4fd377e),
          (0x12d232ce1,0xf16c0589),
+         (0x12d36bf61,0xe1f65ad3),
          (0x1306a6fa5,0x41e23c41),
          (0x131ca7e5b,0xab469edb),
+         (0x1322f2dd7,0x57e61cc6),
          (0x132cc9d0f,0xb3ecc0b2),
          (0x136941fdd,0xe0b7a98f),
          (0x138dfd1bb,0x2632ae57),
+         (0x13e0d9af5,0x785fdb2f),
          (0x1494df651,0xf87b1bf0),
          (0x14b1aa05d,0x2b2278dc),
+         (0x14e077749,0x3b714eac),
          (0x15c31b23b,0xbb248f8d),
          (0x16a66447d,0xee283233),
          (0x16df76d31,0x738763c9),
          (0x16e16d1ff,0xe3cc25f5),
          (0x170e2a4f9,0x7ad302d1),
          (0x17113ff8f,0x501d7d2),
+         (0x1749d92ff,0xe9a7cc7d),
          (0x1785697b3,0x2b59f8fd),
+         (0x188e3491b,0x8212121d),
+         (0x18cb94dbd,0xc467da7d),
          (0x18f165e83,0x67feb58b),
          (0x1957dcd91,0x48199453),
+         (0x195e486cd,0x31479fe5),
          (0x199740c05,0xdd9345ba),
          (0x19b98d4e1,0x947b658c),
+         (0x1a688aecd,0xc776e3a0),
          (0x1a85c5fd5,0xf13e16f2),
          (0x1aeb6425f,0xdcf8fe94),
+         (0x1c161ab4f,0x2a9b8784),
          (0x1c61943eb,0x78501824),
          (0x1c811fbed,0x893dd8d4),
          (0x1c93bbbf1,0xaefa4d2c),
          (0x1cfde74f5,0x856eec7a),
          (0x1d31abc89,0xe3c0f1bb),
          (0x1e2dbe967,0x844071a2),
+         (0x1e1ee55cf,0xbf47c9d0),
          (0x1e41f4bbf,0xcc98d5eb),
          (0x1e684059b,0xa6d827c3),
          (0x1ea9d620d,0xba5cba95),
+         (0x1ee2d6291,0xb9740837),
+         (0x1f039fedf,0xfa3a5a3d),
+         (0x1ffd5e933,0x320c9e72),         
          (0x1ffe77383,0x8b4caadb)]
 }
 
 def genKey(size, random, *, hardcode = False):
     m, g = None, None
     if hardcode and size in hardcodedKeys:
-        m, g = hardcodedKeys[size][random.randrange(len(hardcodedKeys))]
+        m, g = hardcodedKeys[size][random.randrange(len(hardcodedKeys[size]))]
         g = GF2(value=g, size=size, mod=m)
+        
+        from gf2.gf2_math import _exteuc
+        
+        # Find s such that s and 2**size-1 are coprime
+        s = random.randrange(1, 2**size)
+        while _exteuc(s, 2**size-1)[0] != 1:
+            s = random.randrange(1, 2**size)
+        
+        g = g**s
     
     if m is None or g is None:
         m = getMod(size, random)
@@ -258,6 +284,7 @@ if __name__ == '__main__':
     makeKeys = False
     
     if makeKeys:
+        print('Generating Polynomials')
         size = 32
         with open('polys-%s' % size, 'a') as f:
             while True:
@@ -268,9 +295,9 @@ if __name__ == '__main__':
                 f.write('%x\t%x\n' % (m, g))
                 f.flush()
         
-    n = 25
+    n = 100
     lgSize = 32
-    hardcode = False
+    hardcode = True
     
     partyData = {i:{'ss':SecretSharing(n, lgSize, random), 'keys':{}, 'sharedKeys':[None]*n} for i in range(n)}
     
@@ -278,7 +305,7 @@ if __name__ == '__main__':
     
     # TODO: move hardcodedKeys to seperate file
     if hardcode and lgSize in hardcodedKeys:
-        polyMod, g = hardcodedKeys[lgSize][random.randrange(len(hardcodedKeys))]
+        polyMod, g = hardcodedKeys[lgSize][random.randrange(len(hardcodedKeys[lgSize]))]
     else:
         polyMod = findRandomIrreduciblePolynomial(lgSize, random)
     

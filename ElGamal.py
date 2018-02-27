@@ -1,5 +1,3 @@
-from gf2.gf2 import GF2
-
 try:
     from gf2c import findRandomIrreduciblePolynomial
     from gf2c import findRandomGeneratorPolynomial
@@ -90,6 +88,8 @@ class ElGamal:
     
 if __name__ == '__main__':
     import secrets
+    
+    from gf2 import GF2
     
     size = 32
     

@@ -2,15 +2,11 @@ import time
 import math
 from functools import reduce
 
-from gf2.gf2 import GF2
+from gf2 import GF2
 from polynomial import Polynomial
 
-try:
-    from gf2c import findRandomIrreduciblePolynomial
-    from gf2c import findRandomGeneratorPolynomial
-except ImportError:
-    from gf2.gf2 import findRandomIrreduciblePolynomial
-    from gf2.gf2 import findRandomGeneratorPolynomial 
+from gf2.gf2 import findRandomIrreduciblePolynomial
+from gf2.gf2 import findRandomGeneratorPolynomial 
     
 import ElGamal
 
@@ -107,7 +103,7 @@ def genKey(size, random, *, hardcode = False):
     k = getKey(g, size, random)
     return (m, g, k)
 
-class SecretSharing:
+class CoinFlipping:
     def __init__(self, n, lgSize, random):
         self.n = n
         self.t = self.n // 2
@@ -166,9 +162,9 @@ class SecretSharing:
         shares = []
         shareIndex = 0
         GF2GenPoly = lambda x: GF2(value=x, size=self.size, mod=polyMod)
-        for pkRow, secretKeyRow, encSharesRow in zip(sharedPublicKeys, sharedSecretKeys, encShares):
+        for publicKeyRow, secretKeyRow, encSharesRow in zip(sharedPublicKeys, sharedSecretKeys, encShares):
             
-            if pkRow is None or secretKeyRow is None or encSharesRow is None:
+            if publicKeyRow is None or secretKeyRow is None or encSharesRow is None:
                 shares.append([None] * self.n)
                 self.userWarnings[shareIndex] = 'Aborted'
                 shareIndex += 1
@@ -176,13 +172,13 @@ class SecretSharing:
             
             sharesRow = []
             
-            for pk, secretKey, encShare in zip(pkRow, secretKeyRow, encSharesRow):
-                if pk is None or secretKey is None or encShare is None:
+            for publicKey, secretKey, encShare in zip(publicKeyRow, secretKeyRow, encSharesRow):
+                if publicKey is None or secretKey is None or encShare is None:
                     sharesRow.append(None)
                     self.userWarnings[shareIndex] = 'Aborted'
                     continue
                 
-                mod, generator, publicKey = pk
+                mod, generator, publicKey = publicKey
                 
                 GF2Gen = lambda x: GF2(value=x, size=self.size, mod=mod)
                 
@@ -191,6 +187,8 @@ class SecretSharing:
                 encShare = tuple(map(GF2Gen, encShare))
                 
                 key = ElGamal.ElGamal(generator=generator, lgGroupSize=self.size, random=self.random, secretKey=secretKey)
+                
+                # Unique witness detection
                 if int(key.publicKey) != publicKey:
                     sharesRow.append(None)
                     self.userWarnings[shareIndex] = 'Malicious'
@@ -253,13 +251,13 @@ if __name__ == '__main__':
         for badParty in badParties:
             sharedSecretKeys[badParty] = None
         
-        publicSS = SecretSharing(n, lgSize, random)
+        publicSS = CoinFlipping(n, lgSize, random)
         publicRandomness = publicSS.reconstruct(encShares, sharedPublicKeys, sharedSecretKeys, polyMod)    
     
         return publicSS, publicRandomness
     
     def testing(n = 20, lgSize = 8):
-        partyData = {i:{'ss':SecretSharing(n, lgSize, random), 'keys':{}, 'sharedKeys':[None]*n} for i in range(n)}
+        partyData = {i:{'ss':CoinFlipping(n, lgSize, random), 'keys':{}, 'sharedKeys':[None]*n} for i in range(n)}
         
         partyData = keygen(partyData)
         polyMod = findRandomIrreduciblePolynomial(lgSize, random)
@@ -295,11 +293,11 @@ if __name__ == '__main__':
                 f.write('%x\t%x\n' % (m, g))
                 f.flush()
         
-    n = 100
+    n = 50
     lgSize = 32
     hardcode = True
     
-    partyData = {i:{'ss':SecretSharing(n, lgSize, random), 'keys':{}, 'sharedKeys':[None]*n} for i in range(n)}
+    partyData = {i:{'ss':CoinFlipping(n, lgSize, random), 'keys':{}, 'sharedKeys':[None]*n} for i in range(n)}
     
     cProfile.run('partyData = keygen(partyData, hardcode=hardcode)', sort='cumulative')
     

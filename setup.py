@@ -1,14 +1,8 @@
 # python setup.py build_ext --inplace
 from distutils.core import setup, Extension
 
-#module1 = Extension('gf2c', sources = ['gf2/gf2.c'])
 interpolateModule = Extension('interpolateGF2', sources = ['gf2/gf2.c', 'interpolateGF2.c'], extra_compile_args=["-fPIC"])
 ElGamalModule = Extension('ElGamalGF2', sources = ['gf2/gf2.c', 'ElGamal.c'], extra_compile_args=["-fPIC"])
-
-#setup (name = 'gf2c',
-#       version = '1.0',
-#        description = 'Galois field package',
-#        ext_modules = [module1])
 
 setup (name = 'coinFlipping',
        version = '1.0',

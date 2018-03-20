@@ -5,12 +5,10 @@ from functools import reduce
 from gf2 import GF2
 from polynomial import Polynomial
 
-from gf2.gf2 import findRandomIrreduciblePolynomial
-from gf2.gf2 import findRandomGeneratorPolynomial 
+from gf2 import findRandomIrreduciblePolynomial
+from gf2 import findRandomGeneratorPolynomial 
     
 import ElGamal
-
-#import concurrent.futures
 
 try:
     from interpolateGF2 import interpolatePolynomial as interpolate
@@ -82,6 +80,15 @@ hardcodedKeys = {
 }
 
 def genKey(size, random, *, hardcode = False):
+    '''
+    Generate keys for ElGamal
+    
+    @param size - The number of bits of each key
+    @param random - The randomness to use to choose keys (requires randrange method)
+    @param hardcode - Should we use the hardcoded moduli or generate new moduli
+    
+    @return - a tuple (m, g, k) where (m, g) is a modulus, generator pair and k is an ElGamal key
+    '''
     m, g = None, None
     if hardcode and size in hardcodedKeys:
         m, g = hardcodedKeys[size][random.randrange(len(hardcodedKeys[size]))]
@@ -104,17 +111,38 @@ def genKey(size, random, *, hardcode = False):
     return (m, g, k)
 
 class CoinFlipping:
+    '''
+    An algorithm to generate randomness as long as more than half of the parties are honest
+    '''
     def __init__(self, n, lgSize, random):
+        
+        # Number of parties
         self.n = n
+        
+        # Max number of corruptions
         self.t = self.n // 2
+        
+        # The number of bits for each party to generate (for a total of self.size * self.t)
         self.size = lgSize
+        
+        # The randomness to use
         self.random = random
+        
+        # The local keys generated
         self.keys = None
         self.publicKeys = None
         self.privateKeys = None
+        
+        # The randomly generated polynomial in GF2
         self.gfpoly = None
+        
+        # Points on self.gfpoly
         self.deal = None
+        
+        # Encrypted points on self.gfpoly
         self.encDeal = None
+        
+        
         self.summedPoly = None
         self.userWarnings = [None] * self.n
         
@@ -122,6 +150,9 @@ class CoinFlipping:
         return '%s' % ((self.n, self.size, self.publicKeys, self.privateKeys, self.gfpoly, self.deal, self.encDeal, self.summedPoly),) 
         
     def generateKeys(self, *, hardcode = False):
+        '''
+        Generate keys to share with other parties
+        '''
         if self.keys is None:
             self.keys = [i for i in map(lambda x: genKey(self.size, self.random, hardcode = hardcode), range(self.n))]
             self.publicKeys = [(int(mod), int(gen), int(key.publicKey)) for mod, gen, key in self.keys]
@@ -130,30 +161,39 @@ class CoinFlipping:
         return self.publicKeys
         
     def share(self, sharedPublicKeys, polyMod = None, *, _testing = None):
+        '''
+        Given public keys from other parties generate and share a random polynomial
+        '''
         
         if polyMod is None:
             self.polyMod = findRandomIrreduciblePolynomial(self.size, self.random)
         else:
             self.polyMod = polyMod
         
+        # Generate t+1 random coefficients
         coefficients = [GF2(value=self.random.randrange(0, 2**self.size), size=self.size, mod=self.polyMod) for i in range(self.t+1)]
         
+        # Used for testing to allow a party to change the degree of the polynomial
         if _testing is not None and 'degree' in _testing:
             coefficients = [GF2(value=self.random.randrange(0, 2**self.size), size=self.size, mod=self.polyMod) for i in range(_testing['degree']+1)]
             
+        # Create the polynomial
         self.gfpoly = Polynomial(coefficients = coefficients)        
         
+        # Deal out the polynomial
         self.deal = [self.gfpoly(i + self.t + 1) for i in range(self.n)]        
         
+        # Determine which keys to use
         sharedPublicKeys = [ElGamal.ElGamal(generator=GF2(value=generator, size=self.size, mod=mod), lgGroupSize=self.size, random=self.random, publicKey=GF2(value=publicKey, size=self.size, mod=mod)) for mod, generator, publicKey in sharedPublicKeys]
-
+        
+        # Encrypt each share with the apropriate public key
         self.encDeal = [tuple(map(int, sharedPublicKeys[i].encrypt(self.deal[i]))) for i in range(self.n)]
         
         return self.encDeal
         
     def reconstruct(self, encShares, sharedPublicKeys, sharedSecretKeys, polyMod):
         '''
-        param list<list<int>> encShares: An array of encrypted shares to be reconstructed
+        @param list<list<int>> encShares - An array of encrypted shares to be reconstructed
         '''
         # Transpose the encrypted shares array so that each row (instead of each column) can be decrypted by a single user
         encShares = list(zip(*encShares))
@@ -164,38 +204,48 @@ class CoinFlipping:
         GF2GenPoly = lambda x: GF2(value=x, size=self.size, mod=polyMod)
         for publicKeyRow, secretKeyRow, encSharesRow in zip(sharedPublicKeys, sharedSecretKeys, encShares):
             
+            # Check that all data is available
             if publicKeyRow is None or secretKeyRow is None or encSharesRow is None:
                 shares.append([None] * self.n)
                 self.userWarnings[shareIndex] = 'Aborted'
                 shareIndex += 1
                 continue
             
+            # A row of decrypted shares
             sharesRow = []
             
             for publicKey, secretKey, encShare in zip(publicKeyRow, secretKeyRow, encSharesRow):
+                # Check that all data is available
                 if publicKey is None or secretKey is None or encShare is None:
                     sharesRow.append(None)
                     self.userWarnings[shareIndex] = 'Aborted'
                     continue
                 
+                # Seperate the public key
                 mod, generator, publicKey = publicKey
                 
                 GF2Gen = lambda x: GF2(value=x, size=self.size, mod=mod)
                 
+                # Cast generator, secretKey and encShare into GF2 elements
                 generator = GF2Gen(generator)
                 secretKey = GF2Gen(secretKey)
                 encShare = tuple(map(GF2Gen, encShare))
                 
                 key = ElGamal.ElGamal(generator=generator, lgGroupSize=self.size, random=self.random, secretKey=secretKey)
                 
-                # Unique witness detection
+                # Unique witness detection (check that the public key generated from the secret key is the same as the original public key)
                 if int(key.publicKey) != publicKey:
                     sharesRow.append(None)
                     self.userWarnings[shareIndex] = 'Malicious'
                     continue
                 
+                # Decrypt the share
                 share = int(key.decrypt(encShare))
+                
+                # Cast share into a GF2 element
                 share = GF2GenPoly(share)
+                
+                # Add share to row
                 sharesRow.append((GF2GenPoly(shareIndex + self.t + 1), share))
                 
             shareIndex += 1
@@ -204,11 +254,16 @@ class CoinFlipping:
         # Transpose the shares so each row corrosponds to a polynomial
         shares = list(zip(*shares))
         
+        # Remove null values
         pointList = [list(filter(lambda x: x is not None, points)) for points in shares]
-
+        
+        # Use the first t+2 points to interpolate a unique polynomial
         polynomials = [interpolatePolynomial(points[:self.t+2], polyMod, self.size) for points in pointList]
         
+        # Sum all of the valid polynomials together
         self.summedPoly = Polynomial(coefficients = [GF2GenPoly(0)]) 
+        
+        # Check that polynomials are of the correct degree
         for i, poly in enumerate(polynomials):
             if poly.degree() > self.t:
                 polynomials[i] = None
@@ -216,6 +271,7 @@ class CoinFlipping:
             else:
                 self.summedPoly += poly
         
+        # Evaluate and concatinate the sum of all of the valid polynomials
         return reduce(lambda x, y: x + int(y).to_bytes(math.ceil(self.size/8), 'big'), (self.summedPoly(i) for i in range(self.t)), b'')
         
                 
@@ -270,7 +326,6 @@ if __name__ == '__main__':
         print(publicRandomness)
         print(publicSS.userWarnings)
         
-        #print('Reconstruct time: %.3f, per user: %.3f' % (reconsrtuctTime, reconsrtuctTime/n))
     
 if __name__ == '__main__':
     import random
@@ -293,7 +348,7 @@ if __name__ == '__main__':
                 f.write('%x\t%x\n' % (m, g))
                 f.flush()
         
-    n = 50
+    n = 20
     lgSize = 32
     hardcode = True
     

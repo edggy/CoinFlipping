@@ -1,6 +1,7 @@
 import time
 import math
 from functools import reduce
+from itertools import combinations
 
 from gf2 import GF2
 from polynomial import Polynomial
@@ -22,6 +23,182 @@ getGen = lambda mod, size, random: findRandomGeneratorPolynomial(size, mod, rand
 getKey = lambda gen, size, random: ElGamal.ElGamal(generator=gen, lgGroupSize=size, random=random)
 
 hardcodedKeys = {
+    8: [(0x15f, 0x1e),
+        (0x1a3, 0x98),
+        (0x165, 0x36),
+        (0x14d, 0xd2),
+        (0x1d7, 0x48),
+        (0x1f3, 0xad),
+        (0x177, 0x6c),
+        (0x1d7, 0x31),
+        (0x1dd, 0x70),
+        (0x1cf, 0x73),
+        (0x14d, 0x4b),
+        (0x13f, 0xa9),
+        (0x12d, 0xd1),
+        (0x171, 0x29),
+        (0x11b, 0x2c),
+        (0x1dd, 0x39),
+        (0x169, 0x91),
+        (0x139, 0x60),
+        (0x177, 0xa5),
+        (0x1b1, 0xcf),
+        (0x139, 0x5f),
+        (0x1c3, 0x54),
+        (0x12b, 0x6),
+        (0x1cf, 0x54),
+        (0x1f5, 0xeb),
+        (0x1d7, 0x38),
+        (0x1bd, 0xd4),
+        (0x165, 0xc2),
+        (0x13f, 0x8d),
+        (0x177, 0x75),
+        (0x165, 0x8a),
+        (0x18b, 0x39),
+        (0x171, 0x24),
+        (0x18d, 0x80),
+        (0x177, 0x5b),
+        (0x165, 0x87),
+        (0x1d7, 0x38),
+        (0x1a3, 0x47),
+        (0x12b, 0x10),
+        (0x169, 0xdb),
+        (0x18d, 0x6e),
+        (0x18b, 0x75),
+        (0x139, 0x3f),
+        (0x171, 0x38),
+        (0x1f9, 0x82),
+        (0x1bd, 0x56),
+        (0x187, 0x99),
+        (0x1a3, 0xa4),
+        (0x12d, 0x43),
+        (0x13f, 0x7),
+        (0x1e7, 0xd7),
+        (0x1f3, 0xfc),
+        (0x19f, 0xb5),
+        (0x1bd, 0xb9),
+        (0x14d, 0x4b),
+        (0x19f, 0xa5),
+        (0x139, 0x74),
+        (0x169, 0x21),
+        (0x12b, 0x86),
+        (0x171, 0x68),
+        (0x14d, 0xaf),
+        (0x1c3, 0xf1),
+        (0x15f, 0x87)],
+    16: [(0x1a2fd, 0x9ae5),
+         (0x1ed5f, 0xb46),
+         (0x151d3, 0xce65),
+         (0x1640d, 0xfe3c),
+         (0x1d441, 0xec58),
+         (0x17447, 0xca95),
+         (0x17515, 0xf3db),
+         (0x15851, 0x3955),
+         (0x1315d, 0xc8bd),
+         (0x183d5, 0x669a),
+         (0x1683b, 0xa4d2),
+         (0x1bd65, 0x4a5c),
+         (0x1ecad, 0x379a),
+         (0x1e233, 0x3223),
+         (0x1cf09, 0x8c3c),
+         (0x12295, 0xa3c6),
+         (0x1ece9, 0x2811),
+         (0x15289, 0xd23c),
+         (0x167a1, 0x625d),
+         (0x148f5, 0x6deb),
+         (0x1ecd9, 0x2b4f),
+         (0x14a6d, 0xa014),
+         (0x1d72d, 0x5715),
+         (0x19b5d, 0xfff),
+         (0x179ab, 0xd40a),
+         (0x11127, 0xc5d0),
+         (0x19517, 0xb040),
+         (0x19055, 0x159c),
+         (0x1dd99, 0x59c9),
+         (0x1af93, 0x6dc9),
+         (0x17a61, 0x5d9d),
+         (0x141e1, 0xdbcf),
+         (0x1728d, 0x65fa),
+         (0x1ef85, 0xfba4),
+         (0x158d9, 0xdaa4),
+         (0x1df29, 0xa3),
+         (0x1e87d, 0xa18),
+         (0x18315, 0xbb10),
+         (0x1ddf3, 0x30a2),
+         (0x10d43, 0xee1b),
+         (0x1554b, 0xcc91),
+         (0x1e7a5, 0xd89d),
+         (0x1db47, 0xb916),
+         (0x1cb23, 0xf5f7),
+         (0x189ad, 0x4132),
+         (0x17e41, 0x49c3),
+         (0x1aadd, 0xabc4),
+         (0x14c67, 0x3c66),
+         (0x17e65, 0x6044),
+         (0x1ec2f, 0x49e8),
+         (0x19335, 0x781c),
+         (0x1e6ad, 0xd69b),
+         (0x19d49, 0x1f52),
+         (0x1c1df, 0xc189),
+         (0x14a91, 0x174),
+         (0x16749, 0x52dd),
+         (0x1ab3d, 0xcb11),
+         (0x14dd1, 0x331e),
+         (0x1844d, 0x165a),
+         (0x17711, 0x35d7),
+         (0x11a6b, 0x1911),
+         (0x1b05b, 0x4f79),
+         (0x1e439, 0xc646),
+         (0x1ba85, 0x1771),
+         (0x1706b, 0xf1ba),
+         (0x12ec9, 0x7d26),
+         (0x161ef, 0x9751),
+         (0x182bb, 0xc451),
+         (0x1562d, 0x72a6),
+         (0x159ff, 0x501e),
+         (0x1d8c3, 0x5fd3),
+         (0x1ff05, 0xa6c7),
+         (0x1e233, 0xdf8e),
+         (0x1c527, 0x2b57),
+         (0x1c8ef, 0xdc7e),
+         (0x183b3, 0x24de),
+         (0x1f60f, 0x6150),
+         (0x16539, 0xada9),
+         (0x1e0d5, 0xfcc0),
+         (0x1708f, 0xfd37),
+         (0x1a4cd, 0xd030),
+         (0x175a7, 0xc1ac),
+         (0x1cf33, 0x5dca),
+         (0x11bbd, 0x89f9),
+         (0x1bc45, 0x5b7e),
+         (0x14d39, 0x719b),
+         (0x18a0d, 0x51ba),
+         (0x1abd9, 0x539b),
+         (0x12cad, 0x586a),
+         (0x1aa21, 0x6506),
+         (0x1733d, 0x3747),
+         (0x12051, 0xfd31),
+         (0x1c1cd, 0xdb),
+         (0x1ea51, 0x49cc),
+         (0x1a6b7, 0x41e5),
+         (0x1916b, 0xbe1e),
+         (0x10175, 0xb0bd),
+         (0x15ad7, 0xef65),
+         (0x1915d, 0xad36),
+         (0x1f93f, 0xe2e8),
+         (0x164b9, 0x1047),
+         (0x11ae5, 0x4b93),
+         (0x15b45, 0x8603),
+         (0x18985, 0x5eb2),
+         (0x1dd39, 0x9b0a),
+         (0x19ba1, 0xeb7),
+         (0x115df, 0xe7ae),
+         (0x19681, 0xe9fd),
+         (0x11bbd, 0x25cf),
+         (0x191a1, 0xc093),
+         (0x16a3f, 0x1790),
+         (0x18637, 0xbc40),
+         (0x11c57, 0xb065)],
     32: [(0x1020609b3, 0xf2dff8e8),
          (0x10ae3a5b5,0xb3a61eea),
          (0x10c44a745,0xb46b3c1a),
@@ -174,11 +351,17 @@ class CoinFlipping:
         coefficients = [GF2(value=self.random.randrange(0, 2**self.size), size=self.size, mod=self.polyMod) for i in range(self.t+1)]
         
         # Used for testing to allow a party to change the degree of the polynomial
-        if _testing is not None and 'degree' in _testing:
-            coefficients = [GF2(value=self.random.randrange(0, 2**self.size), size=self.size, mod=self.polyMod) for i in range(_testing['degree']+1)]
+        if _testing is not None:
+            if 'degree' in _testing:
+                coefficients = [GF2(value=self.random.randrange(0, 2**self.size), size=self.size, mod=self.polyMod) for i in range(_testing['degree']+1)]
+            elif 'coefficients' in _testing:
+                coefficients = [GF2(value=i, size=self.size, mod=self.polyMod) for i in _testing['coefficients']]
+            elif 'polynomial' in _testing:
+                self.gfpoly = _testing['polynomial']
             
-        # Create the polynomial
-        self.gfpoly = Polynomial(coefficients = coefficients)        
+        if self.gfpoly is None:
+            # Create the polynomial
+            self.gfpoly = Polynomial(coefficients = coefficients)        
         
         # Deal out the polynomial
         self.deal = [self.gfpoly(i + self.t + 1) for i in range(self.n)]        
@@ -257,8 +440,8 @@ class CoinFlipping:
         # Remove null values
         pointList = [list(filter(lambda x: x is not None, points)) for points in shares]
         
-        # Use the first t+2 points to interpolate a unique polynomial
-        polynomials = [interpolatePolynomial(points[:self.t+2], polyMod, self.size) for points in pointList]
+        # Use the first t+1 points to interpolate a unique polynomial
+        polynomials = [interpolatePolynomial(points, polyMod, self.size) for points in pointList]
         
         # Sum all of the valid polynomials together
         self.summedPoly = Polynomial(coefficients = [GF2GenPoly(0)]) 
@@ -268,6 +451,12 @@ class CoinFlipping:
             if poly.degree() > self.t:
                 polynomials[i] = None
                 self.userWarnings[i] = 'Malicious'
+                combos = combinations(reversed(pointList[i]), self.t+2)
+                for combo in combos:
+                    newPoly = interpolatePolynomial(list(combo), polyMod, self.size)
+                    if newPoly.degree() <= self.t:
+                        print(combo)
+                        print(newPoly)
             else:
                 self.summedPoly += poly
         
@@ -276,11 +465,12 @@ class CoinFlipping:
         
                 
 if __name__ == '__main__':       
-    def keygen(partyData, *, hardcode = False):
+    def keygen(partyData, *, hardcode = False, verbose = False):
         def keygenUser(name, data):
             if not isinstance(name, int):
-                return    
-            print('Generating keys for %d' % name)
+                return  
+            if verbose: 
+                print('Generating keys for %d' % name)
             data['keys'] = {(i, name):key for i, key in enumerate(data['ss'].generateKeys(hardcode=hardcode))}
             for oName, oData in partyData.items():
                 oData['sharedKeys'][name] = data['keys'][(oName, name)]        
@@ -288,9 +478,10 @@ if __name__ == '__main__':
         [i for i in map(lambda x: keygenUser(x[0], x[1]), partyData.items())]
         return partyData
             
-    def shareData(partyData, polyMod, *, _testing = None):
+    def shareData(partyData, polyMod, *, _testing = None, verbose = False ):
         for name, data in partyData.items():
-            print('Sharing data for %d' % name)
+            if verbose: 
+                print('Sharing data for %d' % name)
             # Simulate users generating a polynomial that's too big
             if _testing is not None and name in _testing:
                 data['shares'] = data['ss'].share(data['sharedKeys'], polyMod=polyMod, _testing = _testing[name])
@@ -307,7 +498,7 @@ if __name__ == '__main__':
         for badParty in badParties:
             sharedSecretKeys[badParty] = None
         
-        publicSS = CoinFlipping(n, lgSize, random)
+        publicSS = CoinFlipping(n, lgSize, None)
         publicRandomness = publicSS.reconstruct(encShares, sharedPublicKeys, sharedSecretKeys, polyMod)    
     
         return publicSS, publicRandomness
@@ -326,31 +517,160 @@ if __name__ == '__main__':
         print(publicRandomness)
         print(publicSS.userWarnings)
         
-    
-if __name__ == '__main__':
+
+def statistics(n, lgSize = 8, file = None, sortby = 'cumulative', 
+               statsRegex = '(\\(generateKeys\\)|\\(share\\)|\\(reconstruct\\))', 
+               hardcode = True, seed = None, verbose = False):
     import random
-    #random.seed(0)
-    random = random.SystemRandom()
-    from collections import defaultdict    
-    import cProfile
+    import cProfile, pstats
+    from io import StringIO
+    #from collections import defaultdict
     
-    makeKeys = False
-    
-    if makeKeys:
-        print('Generating Polynomials')
-        size = 32
-        with open('polys-%s' % size, 'a') as f:
-            while True:
-                m = getMod(size, random)
-                print(hex(m), end=' ', flush=True)
-                g = getGen(m, size, random)
-                print(hex(g), flush=True)
-                f.write('%x\t%x\n' % (m, g))
-                f.flush()
+    if seed is None:
+        seed = random.randrange(0, 2**32)
+        random.seed(seed)
+    elif seed == 'SystemRandom':
+        seed = -1
+        random = random.SystemRandom()
+    else:
+        random.seed(seed)
         
-    n = 20
-    lgSize = 32
+    buffer = StringIO()
+    
+    pr = cProfile.Profile()
+    
+    #data = defaultdict(lambda: defaultdict(int))
+    data = {}
+    data['n'] = n
+    data['lgSize'] = lgSize
+    data['seed'] = seed
+    data['hardcode'] = hardcode
+    
+    buffer.write('n = %s, lgSize = %s, seed = 0x%x, hardcode = %s\n' % (n, lgSize, seed, hardcode))
+    
+    partyData = {i:{'ss':CoinFlipping(n, lgSize, random), 'keys':{}, 'sharedKeys':[None]*n} for i in range(n)}
+    data['partyData'] = partyData
+    
+    pr.enable()
+    partyData = keygen(partyData, hardcode=hardcode, verbose=verbose) 
+    pr.disable()
+    
+    # TODO: move hardcodedKeys to seperate file
+    if hardcode and lgSize in hardcodedKeys:
+        polyMod, g = hardcodedKeys[lgSize][random.randrange(len(hardcodedKeys[lgSize]))]
+    else:
+        polyMod = findRandomIrreduciblePolynomial(lgSize, random)
+    
+    pr.enable()
+    partyData = shareData(partyData, polyMod, verbose=verbose)
+    pr.disable()
+    
+    pr.enable()
+    publicSS, publicRandomness = recon(partyData, n = n, lgSize = lgSize, polyMod = polyMod, badParties = [])
+    pr.disable()
+    
+    data['publicSS'] = publicSS
+    data['publicRandomness'] = publicRandomness
+    data['publicPoly'] = publicSS.summedPoly
+    data['userWarnings'] = publicSS.userWarnings
+    
+    ps = pstats.Stats(pr, stream=buffer).sort_stats(sortby)
+    ps.print_stats(statsRegex)    
+    
+    for line in buffer.getvalue().split('\n'):
+        functs = ('generateKeys', 'share', 'reconstruct')
+        toks = line.split()
+        if 'function calls' in line:
+            data['functionCalls'] = int(toks[0])
+        
+        for funName in functs:
+            if ('(%s)' % funName) in line:
+                # ncalls  tottime  percall  cumtime  percall
+                data['%s_ncalls' % funName] = int(toks[0])
+                data['%s_tottime'  % funName] = float(toks[1])
+                data['%s_tottime_percall'  % funName] = float(toks[2])
+                data['%s_cumtime'  % funName] = float(toks[3])
+                data['%s_cumtime_percall'  % funName] = float(toks[4])
+    
+    buffer.write('%r\n' % publicSS)
+    buffer.write('%r\n' % publicRandomness)
+    buffer.write('%r\n' % publicSS.userWarnings)
+    
+    totalBits = 0
+    for i in range(n):
+        encShares = partyData[i]['shares']
+        for encShare in encShares:
+            totalBits += reduce(lambda x, y: x + y.bit_length(), encShare, 0)
+        sharedPublicKeys = partyData[i]['ss'].publicKeys
+        for publicKey in sharedPublicKeys:
+            totalBits += reduce(lambda x, y: x + y.bit_length(), publicKey, 0)
+        sharedSecretKeys = partyData[i]['ss'].privateKeys
+        for secretKey in sharedSecretKeys:
+            totalBits += secretKey.bit_length()
+    
+    buffer.write('Total storage needed = %s bits\n' % totalBits)
+    buffer.write('Bits generated = %s bits\n' % (len(publicRandomness)*8,))
+    buffer.write('Storage per bit = %s\n' % (totalBits/(len(publicRandomness)*8),))    
+    buffer.write('\n')
+    file.write(buffer.getvalue())
+    file.flush()
+    
+    data['storage'] = totalBits
+    data['totalBits'] = len(publicRandomness)*8
+    data['storagePerBit'] = totalBits/(len(publicRandomness)*8)
+                             
+    return file, data
+    
+def doExperiment(ns = (4,8,16,32,64,128), lgSizes = (8, 16, 32), file = None, csvFile = None, seeds = (0,), repeats = 10, verbose = False):
+    import csv
+    import os
+    header = next(csv.reader(csvFile))
+    csvFile.seek(0, os.SEEK_END)
+    for n in ns:
+        for lgSize in lgSizes:
+            for seed in seeds:
+                for rep in range(repeats):
+                    print('n = %s, lgSize = %s, seed = %s, rep = %s' % (n, lgSize, seed, rep))
+                    output, data = statistics(n, lgSize=lgSize, file=file, seed=seed, verbose=verbose)
+                    if file is None:
+                        print(output.getvalue())
+                    if csvFile is not None:
+                        
+                        w = csv.DictWriter(csvFile, header, extrasaction='ignore')
+                        #w.writeheader()
+                        w.writerow(data)                        
+    
+
+def makeKeys(size=32, amount = None):
+    print('Generating Polynomials')
+    count = 0
+    with open('polys-%s' % size, 'a') as f:
+        while amount is None or count < amount:
+            m = getMod(size, random)
+            print(hex(m), end=' ', flush=True)
+            g = getGen(m, size, random)
+            print(hex(g), flush=True)
+            f.write('%x\t%x\n' % (m, g))
+            f.flush()   
+            count += 1
+
+if __name__ == '__main__':
+    #import random
+    #random.seed(0)
+    #random = random.SystemRandom()
+    #from collections import defaultdict    
+    #import cProfile
+    
+    #makeKeys(size=32, amount=None)
+    with open('tmpStats.txt' , 'a') as f, open('tmpStats.csv' , 'r+', newline='') as g:
+        #statistics(32, lgSize = 8, file = f, sortby = 'cumulative', hardcode = True, seed = 0)
+        doExperiment(file=f, csvFile=g, ns=(4,8,16,32,64,128,256,512), lgSizes=(8,16,32), seeds=(0,1,2,None,'SystemRandom'), repeats=10, verbose=True)
+        
+    '''n = 32
+    lgSize = 16
     hardcode = True
+    
+    print('n = %s, lgSize = %s, hardcode = %s' % (n, lgSize, hardcode))
     
     partyData = {i:{'ss':CoinFlipping(n, lgSize, random), 'keys':{}, 'sharedKeys':[None]*n} for i in range(n)}
     
@@ -362,10 +682,42 @@ if __name__ == '__main__':
     else:
         polyMod = findRandomIrreduciblePolynomial(lgSize, random)
     
-    cProfile.run('partyData = shareData(partyData, polyMod)', sort='cumulative')
+    GF2GenPoly = lambda x: GF2(value=x, size=lgSize, mod=polyMod)
+    makePoly = lambda x, start = 1: interpolatePolynomial([(GF2GenPoly(i + n//2 + start), GF2GenPoly(v)) for i,v in enumerate(x)] , polyMod, lgSize)
+    badPoints0 = [n//2 + 1] + [i + n//2 + 1 for i in range(1,n//2)]
+    badPoly0 = makePoly(badPoints0)
+    """badPoints0A = [0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+    badPoly0A = makePoly(badPoints0A)
+    badPoints0B = [0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+    badPoly0B = makePoly(badPoints0B, 2)    
+    badPoly0 = badPoly0A + badPoly0B"""
     
-    cProfile.run('publicSS, publicRandomness = recon(partyData, n = n, lgSize = lgSize, polyMod = polyMod, badParties = [])', sort='cumulative')
+    badPoints1 = [2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+    badPoly1 = makePoly(badPoints1)
+    
+    shareStats = cProfile.run('partyData = shareData(partyData, polyMod, _testing = {0:{"polynomial":badPoly0},1:{"polynomial":badPoly1}})', sort='cumulative')
+    
+    print(badPoly0)
+    print(badPoly1)    
+    cProfile.run('publicSS, publicRandomness = recon(partyData, n = n, lgSize = lgSize, polyMod = polyMod, badParties = [2,3,4])', sort='cumulative')
 
     print(publicSS)
     print(publicRandomness)
-    print(publicSS.userWarnings)    
+    print(publicSS.userWarnings)
+    
+    totalBits = 0
+    for i in range(n):
+        encShares = partyData[i]['shares']
+        for encShare in encShares:
+            totalBits += reduce(lambda x, y: x + y.bit_length(), encShare, 0)
+        sharedPublicKeys = partyData[i]['ss'].publicKeys
+        for publicKey in sharedPublicKeys:
+            totalBits += reduce(lambda x, y: x + y.bit_length(), publicKey, 0)
+        sharedSecretKeys = partyData[i]['ss'].privateKeys
+        for secretKey in sharedSecretKeys:
+            totalBits += secretKey.bit_length()
+    
+    print('Total storage needed = %s bits' % totalBits)
+    print('Bits generated = %s bits' % (len(publicRandomness)*8,))
+    print('Storage per bit = %s' % (totalBits/len(publicRandomness)*8,))
+    '''

@@ -12,7 +12,9 @@ import ElGamal
 
 try:
     from interpolateGF2 import interpolatePolynomial as interpolate
+    from interpolateGF2 import decodeReedSolomon as decodeRS
     interpolatePolynomial = lambda points, polyMod, size: Polynomial(coefficients=[GF2(value=i, size=size, mod=polyMod) for i in interpolate(points, polyMod)])
+    decodePolynomial = lambda points, k, polyMod, size: Polynomial(coefficients=[GF2(value=i, size=size, mod=polyMod) for i in decodeRS(points, k, polyMod)])
 except ImportError:
     from polynomial import interpolatePolynomial as interpolate
     interpolatePolynomial = lambda points, polyMod, size: Polynomial(coefficients=interpolate(points))[0]
@@ -258,7 +260,7 @@ class CoinFlipping:
         pointList = [list(filter(lambda x: x is not None, points)) for points in shares]
         
         # Use the first t+2 points to interpolate a unique polynomial
-        polynomials = [interpolatePolynomial(points[:self.t+2], polyMod, self.size) for points in pointList]
+        polynomials = [decodePolynomial(points, self.t-(self.n-len(points)), polyMod, self.size) for points in pointList]
         
         # Sum all of the valid polynomials together
         self.summedPoly = Polynomial(coefficients = [GF2GenPoly(0)]) 
@@ -329,8 +331,8 @@ if __name__ == '__main__':
     
 if __name__ == '__main__':
     import random
-    #random.seed(0)
-    random = random.SystemRandom()
+    random.seed(0)
+    #random = random.SystemRandom()
     from collections import defaultdict    
     import cProfile
     
@@ -348,8 +350,8 @@ if __name__ == '__main__':
                 f.write('%x\t%x\n' % (m, g))
                 f.flush()
         
-    n = 20
-    lgSize = 32
+    n = 8
+    lgSize = 8
     hardcode = True
     
     partyData = {i:{'ss':CoinFlipping(n, lgSize, random), 'keys':{}, 'sharedKeys':[None]*n} for i in range(n)}
@@ -362,9 +364,10 @@ if __name__ == '__main__':
     else:
         polyMod = findRandomIrreduciblePolynomial(lgSize, random)
     
-    cProfile.run('partyData = shareData(partyData, polyMod)', sort='cumulative')
+    cProfile.run('partyData = shareData(partyData, polyMod, _testing={0:{"degree":20}})', sort='cumulative')
+    #cProfile.run('partyData = shareData(partyData, polyMod)', sort='cumulative')
     
-    cProfile.run('publicSS, publicRandomness = recon(partyData, n = n, lgSize = lgSize, polyMod = polyMod, badParties = [])', sort='cumulative')
+    cProfile.run('publicSS, publicRandomness = recon(partyData, n = n, lgSize = lgSize, polyMod = polyMod, badParties = [1])', sort='cumulative')
 
     print(publicSS)
     print(publicRandomness)

@@ -146,6 +146,9 @@ class Polynomial:
     
     def __truediv__(self, other):
         # TODO: General polynomial division
+        if isinstance(other, Polynomial):
+            q, r = divmod(self, other)
+            return q
         if self.mod is None:
             return Polynomial(coefficients = map(lambda x: x / other, self.coefficients), mod=self.mod)  
         else:
@@ -166,14 +169,31 @@ class Polynomial:
         return self // other    
     
     def __mod__(self, other):
-        if isinstance(other, int):
-            return Polynomial(coefficients = self.coefficients, mod=other)
+        if isinstance(other, Polynomial):
+            q, r = divmod(self, other)
+            return r          
+        elif isinstance(other, int):
+            return Polynomial(coefficients = self.coefficients, mod=other)     
         else:
             return Polynomial(coefficients = map(lambda x: x % other, self.coefficients), mod=self.mod)
         
+    def __divmod__(self, other):
+        if other.degree() == 0:
+            return self / other[0], self-self
+        q = Polynomial(coefficients=[0], mod=self.mod)
+        #r = Polynomial(coefficients=self.coefficients[:], mod=self.mod)
+        r = self
+        d = other.degree()
+        c = other[d]
+        while r.degree() >= d:
+            s = Polynomial(coefficients=[0]*(r.degree() - d) + [r[r.degree()]/c], mod=self.mod)
+            q += s
+            r -= s*other
+        return q, r
+        
     def degree(self):
         rightmost = len(self.coefficients) - 1
-        while rightmost >= 0 and self.coefficients[rightmost] == 0:
+        while rightmost > 0 and self.coefficients[rightmost] == 0:
             rightmost -= 1
         return rightmost
     
@@ -183,6 +203,19 @@ class Polynomial:
             output = self(i)
             data += output.to_bytes(t.bit_length()//8+1, 'big')
         return data
+    
+    def egcd(self, b, stop = 0):
+        mod = self.mod
+        r = [self, b]
+        s = [Polynomial(coefficients=[1], mod=mod), Polynomial(coefficients=[0], mod=mod)]
+        t = [Polynomial(coefficients=[0], mod=mod), Polynomial(coefficients=[1], mod=mod)]
+        while r[-1].degree() > stop:
+            q = r[-2] / r[-1]
+            r.append(r[-2] - q*r[-1])
+            s.append(s[-2] - q*s[-1])
+            t.append(t[-2] - q*t[-1])
+            assert r[-1] == self*s[-1] + b*t[-1]
+        return r, s, t    
 
 def lagrangeBasisPolynomial(j, points, mod = None):
     numerator = Polynomial(degree=0, mod=mod)
@@ -198,7 +231,7 @@ def lagrangeBasisPolynomial(j, points, mod = None):
             #print([int(i) for i in (numerator/ denominator)])
     return [numerator, denominator]
 
-
+# TODO: Cache lagrange Basis Polynomials since they are reused when the same x values are used
 def interpolatePolynomial(points, mod = None):
     res = Polynomial(coefficients=[0], mod=mod)
     numDens = []
@@ -246,6 +279,28 @@ def interpolatePolynomial(points, mod = None):
     
     return res
 
+def decodeReedSolomon(points, k, mod = None, makePoly = None):
+    if makePoly is None:
+        makePoly = lambda l: Polynomial(coefficients=l, mod=mod)
+    n = len(points)
+    points = [i for i in points if i[1] is not None]
+    d = n - len(points)
+    g0 = Polynomial()
+    for p in points:
+        g0 *= makePoly([-p[0], 1])    
+    g1, remainder = interpolatePolynomial(points, mod=mod)
+    
+    g, u, v = g0.egcd(g1, (n+k-d-1)//2)
+    return divmod(g[-1],v[-1])
+    
+    '''g, u, v = g0.egcd(g1)
+    for i in range(len(g)):
+        print(g[i])
+        f, r = divmod(g[i],v[i])
+        if f.degree() < k and r.degree() == 0 and r[0] == 0 and f.degree() > 0:
+            print((n+k-d-1)//2)
+            return f, r
+    return None, None'''
 
 if __name__ == '__main__':
    
@@ -265,7 +320,93 @@ if __name__ == '__main__':
     print('%s @ %d = %d' % (r, x, r(x)))
     print('%s @ %d = %d' % (intPol, x, intPol(x)))
     
+    a = Polynomial(coefficients = [7, 6, 0, 1])
+    b = Polynomial(coefficients = [2, 3, 1])
+    print('a = %s' % (a,))
+    print('b = %s' % (b,))
+    
+    q,r = divmod(a,b)
+    print('q = %s' % (q,))
+    print('r = %s' % (r,))
+    print('b*q+r = %s' % (b*q+r,))
+    
+    '''g, u, v = a.egcd(b)
+    print('g = %s' % (g,))
+    print('u = %s' % (u,))
+    print('v = %s' % (v,))
+    
+    print(divmod(a, g[-2]))
+    print(divmod(b, g[-2]))'''
+    
+    import random
+    from gf2 import GF2, findRandomIrreduciblePolynomial, findRandomGeneratorPolynomial
+    lgsize = 8
+    mod = findRandomIrreduciblePolynomial(lgsize, random)
+    makeGF2 = lambda i: GF2(value=i, mod=mod, size=lgsize)
+    makeGF2Poly = lambda l: Polynomial(coefficients = [makeGF2(i) for i in l])
+    makeError = lambda l, i, err: (l[i][0], l[i][1] + err)
+    
+    n, k = 35, 13
+    # For SS t < n/3, t < k < n-2t
+    t = n - k
+    #errPoints = {0:2,1:2,2:2,3:2}
+    errPoints = {6:2, 7:2, 8:2,9:2,10:2,11:2,12:2,13:2,14:2,15:2,16:2}
+    #delPoints = [8,9,10,11,12,13,14,15]
+    delPoints = []
+    random.seed(0)
+    
+    g0 = Polynomial()
+    a = makeGF2Poly([random.randint(0, 2**lgsize-1) for i in range(k)])
+    print('a = %s' % a)
+    points = [(makeGF2(i),a(i)) for i in range(n)]
+    print('points = %s' % points)
+    for x,y in errPoints.items():
+        points[x] = makeError(points, x, y)
+    
+    points = [x for x in points if x[0] not in delPoints] + [(x, None) for x in delPoints]
+    #n -= len(delPoints)
+    newk = k - len(delPoints)
+    newn = n - len(delPoints)
+    print('points = %s' % points)
+    
+    for p in points:
+        g0 *= makeGF2Poly([-p[0], 1])
+    g1, remainder = interpolatePolynomial(points)
+    #print('%s @ %d = %d' % (r, x, r(x)))
+    print('g1 = %s' % (g1,))    
     #inverse = modinv(Polynomial(degree = 2, mod=2), Polynomial(degree = 6, mod=2))
+    
+    '''g, u, v = g0.egcd(g1, (n+newk)//2-1)
+    print((n+newk)//2-1)
+    print('g = %s' % (g,))
+    print('u = %s' % (u,))
+    print('v = %s' % (v,))
+    
+    f, r = divmod(g[-1],v[-1])
+    print('f = %s' % (f,))
+    print('r = %s' % (r,))'''
+    
+    f2, r2 = decodeReedSolomon(points, k, makePoly = makeGF2Poly)
+    print('f2 = %s' % (f2,))
+    print('r2 = %s' % (r2,))    
+    
+    print('#errors = %s, #deletions = %s' % (len(errPoints), len(delPoints)))
+    if a == f2:
+        print('Good Decoding: %s' % (f2,))
+    else:
+        if t < len(errPoints) + len(delPoints):
+            print('Bad Decoding, too many errors and deletions')
+        elif t//2 < len(errPoints):
+            print('Bad Decoding, t too many errors')
+        else:
+            print('Bad Decoding, ???')
+    
+    if f2 is not None and r2.degree() == 0 and r2[0] == 0 and f2.degree() < k:
+        print('Accept')
+    else:
+        print('Reject')
+    #assert a == f or not (t < len(errPoints) + len(delPoints))
+    
     
     '''print(p, p(5), eval(str(p).replace('x', '5')))
     print(q, q(5), eval(str(q).replace('x', '5')))

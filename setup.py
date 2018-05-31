@@ -1,7 +1,7 @@
 # python setup.py build_ext --inplace
 from distutils.core import setup, Extension
 
-interpolateModule = Extension('interpolateGF2', sources = ['gf2/gf2.c', 'interpolateGF2.c'], extra_compile_args=["-fPIC"])
+interpolateModule = Extension('interpolateGF2', sources = ['gf2/gf2.c', 'interpolateGF2.c'], extra_compile_args=["-fPIC", "-Wall", "-Wextra"])
 ElGamalModule = Extension('ElGamalGF2', sources = ['gf2/gf2.c', 'ElGamal.c'], extra_compile_args=["-fPIC"])
 
 setup (name = 'coinFlipping',
